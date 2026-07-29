@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Só por Hoje — Um novo modo de viver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --leather:#241811;
+    --leather-dark:#160E09;
+    --gold:#B8912F;
+    --gold-soft:#D9BE7E;
+    --paper:#F4EEDD;
+    --paper-edge:#E4DABF;
+    --ink:#2A2016;
+    --ink-soft:#5B4E3C;
+    --room:#141210;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: radial-gradient(ellipse at 50% 35%, #221D18 0%, var(--room) 70%);
+    font-family:'Lora', serif;
+    overflow:hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    perspective: 2200px;
+  }
+
+  /* ---------- Flame signature (cover only) ---------- */
+  .flame-wrap{ display:flex; justify-content:center; margin-bottom: 18px; }
+  .flame{
+    width:14px; height:20px;
+    background: radial-gradient(circle at 50% 30%, var(--gold-soft), var(--gold) 55%, transparent 75%);
+    border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+    filter: blur(0.3px);
+    animation: flicker 3.2s ease-in-out infinite;
+    transform-origin: 50% 100%;
+  }
+  @keyframes flicker{
+    0%,100%{ transform: scaleY(1) scaleX(1) rotate(0deg); opacity:.95; }
+    25%{ transform: scaleY(1.08) scaleX(.94) rotate(-2deg); opacity:1; }
+    50%{ transform: scaleY(.92) scaleX(1.05) rotate(1deg); opacity:.88; }
+    75%{ transform: scaleY(1.04) scaleX(.97) rotate(-1deg); opacity:1; }
+  }
+
+  /* ---------- Book stack (paper thickness illusion) ---------- */
+  #book{
+    position:relative;
+    width: min(92vw, 480px);
+    height: min(80vh, 660px);
+    box-shadow:
+      2px 2px 0 var(--paper-edge),
+      4px 4px 0 var(--paper-edge),
+      6px 6px 0 #D8CCAC,
+      8px 8px 18px rgba(0,0,0,.55);
+    border-radius: 3px 6px 6px 3px;
+  }
+  .leaf{
+    position:absolute; inset:0;
+    background: var(--paper);
+    border-radius: 3px 6px 6px 3px;
+    backface-visibility:hidden;
+    transform-style:preserve-3d;
+    overflow:hidden;
+    box-shadow: inset 0 0 40px rgba(120,100,60,.08);
+  }
+  #back{ z-index:1; }
+  #front{ z-index:2; transition: transform .68s cubic-bezier(.45,.05,.35,1); }
+  #front.no-anim{ transition:none !important; }
+  #front::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: linear-gradient(90deg, rgba(0,0,0,.12), transparent 6%, transparent 94%, rgba(0,0,0,.08));
+    opacity:0; transition: opacity .68s ease;
+  }
+  #front.flip-next, #front.flip-prev{}
+  #front.flip-next::after, #front.flip-prev::after{ opacity:1; }
+
+  .page-inner{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    padding: 40px 34px 30px;
+    color: var(--ink);
+  }
+
+  /* Page number */
+  .pageno{
+    position:absolute; bottom:14px; left:0; right:0;
+    text-align:center; font-family:'Lora', serif; font-style:italic;
+    font-size:11px; color: var(--ink-soft); letter-spacing:.04em;
+  }
+
+  /* ---------- Content types ---------- */
+  .cover-page{ align-items:center; justify-content:center; text-align:center;
+    background: radial-gradient(ellipse at 50% 20%, #2E2119 0%, var(--leather) 55%, var(--leather-dark) 100%);
+    color: var(--gold-soft);
+  }
+  .cover-page .title{ font-family:'Fraunces', serif; font-weight:600; font-size: clamp(28px,7vw,40px); letter-spacing:.05em; color:var(--gold); margin:0 0 10px; }
+  .cover-page .subtitle{ font-family:'Fraunces', serif; font-style:italic; font-weight:400; font-size: clamp(14px,3.2vw,17px); color: var(--gold-soft); opacity:.85; margin:0; }
+  .cover-page .rule{ width:70px; height:1px; background: var(--gold); opacity:.5; margin: 22px auto; }
+  .cover-page .hint{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color: var(--gold-soft); opacity:.55; margin-top:26px; }
+
+  .backcover-page{ align-items:center; justify-content:center; text-align:center;
+    background: radial-gradient(ellipse at 50% 80%, #2E2119 0%, var(--leather) 55%, var(--leather-dark) 100%);
+    color: var(--gold-soft);
+  }
+  .backcover-page .brand{ font-family:'Fraunces', serif; font-style:italic; font-size:15px; opacity:.7; }
+
+  .quote-page{ align-items:center; justify-content:center; text-align:center; }
+  .quote-page p{ font-family:'Fraunces', serif; font-style:italic; font-size: clamp(15px,4vw,18px); line-height:1.7; color:var(--ink); margin:4px 0; }
+
+  .section-page .eyebrow{ font-family:'Lora', serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); opacity:.8; margin-bottom:6px; }
+  .section-page h2{ font-family:'Fraunces', serif; font-weight:600; font-size: clamp(20px,5vw,25px); margin: 0 0 18px; color:var(--ink); line-height:1.25; }
+  .section-page .placeholder{ font-style:italic; color:var(--ink-soft); border-top:1px dashed var(--paper-edge); border-bottom:1px dashed var(--paper-edge); padding:14px 0; text-align:center; }
+  .section-page .body{ overflow:auto; }
+  .body p{ font-size: clamp(13.5px,3.6vw,15px); line-height:1.75; margin:0 0 11px; }
+
+  .part-page{ align-items:center; justify-content:center; text-align:center; }
+  .part-page .rule{ width:44px; height:1px; background:var(--gold); margin:16px auto; opacity:.6; }
+  .part-page h1{ font-family:'Fraunces', serif; font-weight:600; font-size: clamp(18px,5vw,23px); letter-spacing:.04em; color:var(--ink); line-height:1.4; margin:0; }
+
+  .chapter-page .eyebrow{ text-align:center; font-family:'Lora', serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; }
+  .chapter-page h2{ text-align:center; font-family:'Fraunces', serif; font-style:italic; font-weight:500; font-size: clamp(15px,4vw,18px); color:var(--ink-soft); margin:0 0 20px; }
+  .chapter-page .body{ overflow:auto; }
+
+  .toc-page h2{ font-family:'Fraunces', serif; font-weight:600; font-size:20px; text-align:center; margin:0 0 16px; color:var(--ink); }
+  .toc-list{ overflow:auto; font-size:13px; }
+  .toc-item{ padding:5px 0; cursor:pointer; border-bottom:1px dotted var(--paper-edge); }
+  .toc-item.heading{ font-weight:600; color:var(--gold); text-transform:uppercase; font-size:11px; letter-spacing:.08em; border-bottom:none; margin-top:10px; cursor:default; }
+  .toc-item.indent{ padding-left:16px; color:var(--ink); }
+  .toc-item:not(.heading):hover{ color:var(--gold); }
+
+  /* ---------- Nav chrome ---------- */
+  .navzone{ position:absolute; top:0; bottom:0; width:32%; z-index:5; cursor:pointer; }
+  .navzone.left{ left:0; }
+  .navzone.right{ right:0; }
+
+  #chrome{
+    position:fixed; left:0; right:0; bottom:0; z-index:10;
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    pointer-events:none;
+  }
+  .chrome-btn{
+    pointer-events:auto;
+    background: rgba(244,238,221,.08);
+    border:1px solid rgba(216,190,126,.35);
+    color: var(--gold-soft);
+    width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; cursor:pointer;
+    backdrop-filter: blur(6px);
+    transition: background .2s, transform .15s;
+  }
+  .chrome-btn:hover{ background: rgba(216,190,126,.18); }
+  .chrome-btn:active{ transform: scale(.92); }
+  .chrome-btn:disabled{ opacity:.3; cursor:default; }
+  #pageCounter{
+    pointer-events:auto;
+    font-family:'Lora', serif; font-size:11px; color: var(--gold-soft); opacity:.7;
+    min-width:64px; text-align:center; letter-spacing:.03em;
+  }
+  #playBtn.playing{ background: rgba(216,190,126,.28); color:#fff; }
+  #narrationNote{
+    position:fixed; bottom:64px; left:0; right:0; z-index:10;
+    text-align:center; font-family:'Lora', serif; font-style:italic;
+    font-size:11px; color:var(--gold-soft); opacity:0; letter-spacing:.04em;
+    transition:opacity .3s; pointer-events:none;
+  }
+  #narrationNote.show{ opacity:.75; }
+
+  #tocBtn{
+    position:fixed; top:18px; left:18px; z-index:10;
+  }
+  #closeReaderNote{
+    position:fixed; top:18px; right:18px; z-index:10;
+    font-family:'Lora', serif; font-size:10px; color:var(--gold-soft); opacity:.45;
+    letter-spacing:.08em; text-transform:uppercase;
+  }
+
+  #tocDrawer{
+    position:fixed; inset:0; z-index:20;
+    background: rgba(15,11,8,.72);
+    backdrop-filter: blur(4px);
+    display:none; align-items:center; justify-content:center;
+  }
+  #tocDrawer.open{ display:flex; }
+  #tocPanel{
+    width:min(90vw,380px); max-height:78vh; overflow:auto;
+    background: var(--paper); border-radius:6px; padding:26px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  #tocPanel h2{ font-family:'Fraunces', serif; font-size:19px; margin:0 0 14px; text-align:center; }
+
+  @media (prefers-reduced-motion: reduce){
+    #front{ transition:none !important; }
+    .flame{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="book">
+    <div id="back" class="leaf"></div>
+    <div id="front" class="leaf"></div>
+  </div>
+  <div class="navzone left" id="navLeft" title="Página anterior"></div>
+  <div class="navzone right" id="navRight" title="Próxima página"></div>
+</div>
+
+<button id="tocBtn" class="chrome-btn" title="Sumário">&#9776;</button>
+<div id="closeReaderNote">só por hoje</div>
+
+<div id="chrome">
+  <button id="prevBtn" class="chrome-btn">&#8249;</button>
+  <button id="playBtn" class="chrome-btn" title="Ouvir">&#128266;</button>
+  <span id="pageCounter">1 / 1</span>
+  <button id="nextBtn" class="chrome-btn">&#8250;</button>
+</div>
+<div id="narrationNote">lendo em voz alta&hellip;</div>
+
+<div id="tocDrawer">
+  <div id="tocPanel"></div>
+</div>
+
+<script id="pages-data" type="application/json">[{"type":"cover","title":"SÓ POR HOJE","subtitle":"Um novo modo de viver","anchor":"Capa"},{"type":"section","label":"Dedicatória","continued":false,"body":["Dedico este livro à minha família.","Àqueles que conheceram o meu pior momento e, ainda assim, acreditaram que eu poderia escrever uma história diferente.","Dedico também a todas as pessoas que enfrentam, em silêncio, uma dependência ou qualquer outra luta que pareça impossível de vencer.","Que estas páginas lhes recordem uma verdade que eu demorei muitos anos para descobrir:","nenhum erro é maior do que a graça de um recomeço.","E que, não importa o tamanho da caminhada, ela sempre começa da mesma maneira.","Só por hoje."],"anchor":"Dedicatória"},{"type":"quote","anchor":"Epígrafe","lines":["“Este não é um livro sobre uma mulher que perdeu tudo.","É a história de uma mulher que descobriu que a verdade pode doer,","mas nunca destrói tanto quanto a mentira.","Se esta história tocar você, caminhe comigo.","Apenas por hoje.”"]},{"type":"toc","anchor":"Sumário","entries":[{"label":"Dedicatória","indent":false},{"label":"Prefácio","indent":false},{"label":"Introdução — Por que escrevi este livro","indent":false},{"label":"Prólogo — A travessia","indent":false},{"label":"PARTE I — ANTES DA QUEDA","indent":false,"heading":true},{"label":"1. A menina que aprendeu cedo demais","indent":true},{"label":"2. Aprendi a cuidar de todo mundo","indent":true},{"label":"3. Quando deixei de me enxergar","indent":true},{"label":"4. O silêncio da mente","indent":true},{"label":"PARTE II — QUANDO TUDO DESABOU","indent":false,"heading":true},{"label":"5. A mentira que mais machucava","indent":true},{"label":"6. Quando a máscara começou a cair","indent":true},{"label":"7. O dia em que a verdade entrou em casa","indent":true},{"label":"8. O peso das consequências","indent":true},{"label":"PARTE III — UM NOVO MODO DE VIVER","indent":false,"heading":true},{"label":"9. O primeiro dia de uma nova vida","indent":true},{"label":"10. Aprender a olhar para o espelho","indent":true},{"label":"11. A confiança se reconstrói em silêncio","indent":true},{"label":"12. Só por hoje","indent":true},{"label":"Epílogo — Um novo modo de viver","indent":false},{"label":"Para minha família","indent":false},{"label":"Uma carta para quem ainda sofre","indent":false},{"label":"Agradecimentos","indent":false},{"label":"Nota aos familiares","indent":false},{"label":"Nota aos profissionais que cuidam de pessoas com dependência","indent":false},{"label":"Última página","indent":false},{"label":"Sobre a autora","indent":false}]},{"type":"section","label":"Prefácio","continued":false,"body":["Existem histórias que nascem para serem contadas.","Outras permanecem em silêncio durante muitos anos.","Não porque lhes falte importância, mas porque ainda não existe coragem suficiente para colocá-las em palavras.","Este livro pertence à segunda categoria.","Ele não foi escrito para justificar escolhas, apagar consequências ou convencer alguém de alguma coisa.","Foi escrito porque a verdade, quando finalmente encontra espaço para existir, também pode se transformar em um caminho de esperança.","Ao longo destas páginas, você conhecerá a história de uma mulher comum.","Uma esposa.","Uma mãe.","Uma profissional."],"anchor":"Prefácio"},{"type":"section","label":null,"continued":true,"body":["Alguém que amava profundamente sua família e, ainda assim, viu sua vida ser atravessada por uma dependência que mudou o rumo da sua história.","Mas este não é um livro sobre derrota.","Também não é um manual de recuperação.","É o relato sincero de alguém que descobriu que recomeçar não significa voltar a ser quem era.","Significa tornar-se alguém mais verdadeiro.","Talvez você se identifique com esta história.","Talvez conheça alguém que esteja vivendo algo parecido.","Ou talvez apenas queira compreender melhor uma realidade que ainda é cercada por julgamentos e silêncio."]},{"type":"section","label":null,"continued":true,"body":["Seja qual for o motivo que o trouxe até aqui, desejo apenas uma coisa:","Que você leia estas páginas com o coração aberto.","Porque, antes de falar sobre dependência, elas falam sobre algo que pertence a todos nós.","A condição humana.","Todos carregamos dores.","Todos enfrentamos lutas invisíveis.","Todos precisamos, em algum momento da vida, da coragem de recomeçar.","Espero que, ao chegar à última página, você não enxergue apenas a minha história.","Espero que enxergue também a possibilidade de que nenhuma vida precisa ser definida pelo seu pior momento.","Porque foi isso que eu descobri."]},{"type":"section","label":"Introdução — Por que escrevi este livro","continued":false,"body":["Durante muito tempo eu pensei que nunca escreveria este livro.","A vergonha falava mais alto.","Eu acreditava que algumas histórias deveriam permanecer escondidas para sempre.","Com o passar dos anos, percebi que era justamente esse silêncio que mantinha a dor viva.","Escrever passou a ser uma forma de olhar para minha própria história com honestidade.","Não para apagar o passado.","Nem para tentar parecer melhor do que fui.","Mas para reconhecer que a verdade, por mais difícil que seja, sempre abre espaço para um novo começo.","Quero deixar algo claro desde o início.","Este livro não foi escrito para falar apenas sobre jogo."],"anchor":"Introdução — Por que escrevi este livro"},{"type":"section","label":null,"continued":true,"body":["O jogo faz parte da minha história, mas não é a minha história.","Minha história começou muito antes.","Ela começou na infância.","Nas perdas.","Nas responsabilidades assumidas cedo demais.","Na tentativa de ser forte o tempo inteiro.","Na dificuldade de pedir ajuda.","E, principalmente, na crença de que cuidar de todos era mais importante do que cuidar de mim.","Foi nesse terreno que a dependência encontrou espaço.","E foi nesse mesmo terreno que a recuperação precisou acontecer.","Ao longo destas páginas, você encontrará momentos difíceis."]},{"type":"section","label":null,"continued":true,"body":["Vai conhecer meus erros, minhas escolhas e as consequências que elas trouxeram para minha vida e para minha família.","Não escondi essas partes porque acredito que a recuperação começa exatamente onde termina a necessidade de parecer perfeita.","Também encontrará esperança.","Não uma esperança ingênua, que promete caminhos fáceis ou finais perfeitos.","Mas a esperança construída em pequenas decisões, repetidas todos os dias.","Aprendi que grandes mudanças quase nunca acontecem de uma só vez.","Elas começam quando decidimos fazer a coisa certa hoje.","Amanhã será um novo desafio.","Depois de amanhã também."]},{"type":"section","label":null,"continued":true,"body":["Foi assim que compreendi o verdadeiro significado da expressão \"Só por Hoje\".","Ela deixou de ser apenas uma frase.","Tornou-se um modo de viver.","Se este livro ajudar alguém a compreender melhor uma pessoa que enfrenta uma dependência, já terá cumprido parte do seu propósito.","Se ajudar alguém a pedir ajuda, terá cumprido outro.","Mas, acima de tudo, espero que ele lembre uma verdade que transformou a minha vida:","Nenhum erro precisa ser a última palavra sobre quem somos.","Enquanto houver vida, haverá a possibilidade de um novo começo.","Um dia de cada vez.","Só por hoje."]},{"type":"section","label":"Prólogo — A travessia","continued":false,"body":["Durante muito tempo eu acreditei que esta história nunca poderia ser contada.","Não porque eu não lembrasse dela.","Mas porque tinha vergonha.","Vergonha das escolhas que fiz.","Vergonha das pessoas que machuquei.","Vergonha da mulher que pensei ter me tornado.","Achei que esconder meu passado era a única maneira de proteger quem eu amava.","Hoje sei que era justamente o contrário.","Foi o silêncio que me afastou de mim mesma.","Escrever este livro não foi fácil.","Em muitos momentos chorei.","Em outros, precisei fechar o computador porque algumas lembranças ainda doem.","Mas descobri que a dor muda de lugar quando deixamos de escondê-la."],"anchor":"Prólogo — A travessia"},{"type":"section","label":null,"continued":true,"body":["Ela deixa de ser uma prisão e passa a fazer parte da nossa história.","Você não encontrará nestas páginas uma mulher perfeita.","Também não encontrará desculpas para os meus erros.","Encontrará apenas a verdade.","A verdade de alguém que conheceu o peso da culpa, o vazio da compulsão e o longo caminho da reconstrução.","Se este livro puder fazer uma única pessoa acreditar que ainda existe esperança, então cada página terá valido a pena.","Porque foi exatamente isso que eu descobri.","Sempre existe um caminho de volta.","Ele começa hoje.","Só por hoje."]},{"type":"part","label":"PARTE I — ANTES DA QUEDA","anchor":"PARTE I — ANTES DA QUEDA"},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Durante muito tempo, pensei que a minha história tivesse começado quando perdi o controle da minha vida.","Hoje sei que não.","Ela começou muito antes.","Começou quando eu ainda era pequena demais para compreender certas dores, mas já precisava conviver com elas.","Eu tinha cinco anos quando perdi meu pai."],"isFirst":true,"anchor":"1. A menina que aprendeu cedo demais"},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Naquela idade, uma criança não entende completamente o significado da morte. Ela apenas sente que alguém importante não voltará para casa.","Demorei muitos anos para compreender o tamanho daquela ausência.","Na infância, a gente não consegue dar nome ao que sente.","Só percebe que alguma coisa falta.","Enquanto outras crianças corriam para mostrar um desenho, contar uma novidade ou simplesmente procurar um abraço, eu fui aprendendo a conviver com um vazio que parecia fazer parte da vida.","Mas aquela não foi a única ausência que me acompanhou.","Existe um tipo de presença que vai muito além de estar na mesma casa."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["É a presença que orienta.","Que percebe.","Que escuta.","Que explica.","Que acolhe.","E essa foi uma falta que também marcou a minha história.","Não escrevo isso para apontar culpados.","Hoje entendo que cada pessoa oferece aquilo que consegue oferecer.","A vida também machuca quem cuida.","E nem toda mãe recebeu o amor que precisava para aprender a demonstrá-lo.","Com o tempo, deixei de esperar algumas respostas.","Deixei de fazer algumas perguntas.","Aprendi a descobrir as coisas sozinha.","Aprendi observando.","Errando.","Tentando.","A vida foi se tornando minha professora.","Mas a vida ensina diferente de uma mãe.","Ela raramente explica antes."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Quase sempre ensina depois que a dor já aconteceu.","Foi assim que cresci.","As responsabilidades chegaram cedo.","Muito antes de eu entender o que significava ser adulta, já existiam preocupações que não combinavam com a idade que eu tinha.","As dificuldades financeiras faziam parte da rotina.","Houve momentos em que a falta era tanta que até a comida se tornava uma preocupação.","Hoje conto isso sem revolta.","Naquela época, porém, eu apenas aceitava.","Porque criança acredita que o mundo é daquele jeito.","Ela não sabe que poderia ser diferente."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Talvez tenha sido ali que comecei a desenvolver uma característica que me acompanharia por muitos anos.","Eu me adaptava.","Se faltava alguma coisa, eu aprendia a viver sem.","Se doía, eu me calava.","Se precisava ser forte, eu tentava ser.","Sem perceber, fui acreditando que suportar tudo era uma qualidade.","Não era.","Era apenas a maneira que encontrei para continuar.","Quando olho para aquela menina hoje, sinto vontade de abraçá-la.","Não porque ela fosse frágil.","Mas porque precisou ser forte cedo demais."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Ela ainda não sabia, mas aquele jeito de colocar as necessidades da vida acima das próprias necessidades se transformaria em um hábito.","Primeiro eram as circunstâncias.","Depois seriam as pessoas.","Muito antes da compulsão aparecer, eu já estava aprendendo a deixar a minha própria vida em segundo plano.","Essa talvez tenha sido a primeira renúncia que fiz sem perceber.","E, como quase tudo que acontece silenciosamente, ela demoraria muitos anos para mostrar as consequências.","A adolescência chegou.","Como toda adolescente, eu também sonhava, fazia planos e imaginava como seria o futuro.","Mas havia uma diferença."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Enquanto muitas meninas tinham alguém para responder às perguntas que surgiam nessa fase da vida, eu seguia aprendendo sozinha.","Não porque fosse mais forte.","Mas porque era o único caminho que conhecia.","Olho para trás e percebo que muitas decisões que tomei naquela época nasceram muito mais da falta de orientação do que da falta de vontade de acertar.","A vida foi me levando.","E eu fui deixando.","Não por rebeldia.","Não por descuido.","Mas porque ninguém havia me ensinado que também era possível escolher um caminho diferente.","Foi nesse cenário que, aos quatorze anos, descobri que estava grávida."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Muitas pessoas imaginam que esse tenha sido o maior problema da minha adolescência.","Para mim, foi diferente.","A notícia trouxe medo.","Trouxe dúvidas.","Trouxe uma responsabilidade enorme.","Mas também despertou uma decisão que mudou a direção da minha vida.","Lembro de olhar para aquela gravidez e fazer uma promessa que nunca precisei dizer em voz alta.","Minha filha não vai viver o que eu vivi.","Ela não vai conhecer a falta como eu conheci.","Ela não vai crescer sem ouvir que é amada.","Ela não vai precisar aprender tudo sozinha.","Naquele instante, eu ainda não tinha condições de cumprir todas essas promessas."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Mas elas passaram a morar dentro de mim.","Hoje percebo que minha filha nunca teve a missão de me salvar.","Essa responsabilidade jamais poderia ser dela.","Mas a chegada dela resgatou algo que eu pensava ter perdido.","Ela me deu uma razão para interromper o caminho que a vida parecia estar traçando para mim.","Se eu tivesse permanecido exatamente onde estava, vivendo da mesma maneira, cercada pelas mesmas circunstâncias, sinceramente não sei quem eu teria me tornado.","Ela mudou a direção dos meus passos."],"isFirst":false},{"type":"chapter","n":1,"title":"A menina que aprendeu cedo demais","body":["Ao tentar construir uma infância diferente para minha filha, sem perceber, comecei também a reconstruir partes da minha própria história.","Foi a primeira vez que fiz uma escolha pensando no futuro, e não apenas tentando sobreviver ao presente.","Eu ainda cometeria muitos erros.","Ainda viveria dores profundas.","Ainda conheceria a compulsão e tudo o que ela seria capaz de destruir.","Mas hoje consigo olhar para trás e reconhecer que a reconstrução da minha vida não começou quando entrei em recuperação.","Ela começou naquele dia.","No dia em que uma menina de quatorze anos decidiu que o ciclo de sofrimento terminaria nela."],"isFirst":false},{"type":"chapter","n":2,"title":"Aprendi a cuidar de todo mundo","body":["Quando olho para trás, percebo que passei muitos anos acreditando que amar era esquecer de mim.","Não foi uma decisão consciente.","Foi uma maneira de viver que fui aprendendo aos poucos.","Primeiro vieram as responsabilidades.","Depois vieram as pessoas.","E, quando percebi, eu sempre aparecia por último.","A maternidade chegou cedo.","Muito cedo."],"isFirst":true,"anchor":"2. Aprendi a cuidar de todo mundo"},{"type":"chapter","n":2,"title":"Aprendi a cuidar de todo mundo","body":["Enquanto muitas meninas da minha idade ainda descobriam quem eram, eu já aprendia a trocar fraldas, a enfrentar noites sem dormir e a carregar uma responsabilidade que mudaria completamente o rumo da minha vida.","Nunca enxerguei minha filha como um erro.","Ela nunca foi.","Ela foi a razão que me fez levantar quando tudo dizia para desistir.","Foi por ela que encontrei coragem para sair de lugares onde talvez tivesse permanecido.","Foi por ela que comecei a acreditar que existia um futuro diferente daquele que eu conhecia.","Ela crescia.","E, junto com ela, crescia também a mulher que eu tentava me tornar.","Não era fácil."],"isFirst":false},{"type":"chapter","n":2,"title":"Aprendi a cuidar de todo mundo","body":["Havia contas para pagar.","Medos para esconder.","Sonhos que precisavam esperar.","Mas havia uma certeza que nunca mudou.","Eu faria tudo o que estivesse ao meu alcance para que ela tivesse oportunidades que eu não tive.","Com o passar dos anos, outras pessoas passaram a fazer parte da minha vida.","Novos relacionamentos.","Novas responsabilidades.","Novos desafios.","E eu continuava fazendo aquilo que sabia fazer melhor.","Cuidar.","Se alguém precisava de ajuda, eu ajudava.","Se alguém sofria, eu tentava aliviar a dor.","Se alguém precisava de mim, eu estava presente.","Durante muito tempo, isso parecia uma qualidade.","E talvez realmente fosse."],"isFirst":false},{"type":"chapter","n":2,"title":"Aprendi a cuidar de todo mundo","body":["O problema é que eu não sabia estabelecer limites.","Eu confundia amor com responsabilidade.","Confundia dedicação com abandono de mim mesma.","Achava bonito ser forte o tempo todo.","Achava bonito resolver tudo.","Achava bonito suportar qualquer peso sem reclamar.","Hoje entendo que existe uma diferença enorme entre generosidade e esquecimento de si.","Mas essa foi uma lição que demorou muitos anos para chegar.","Enquanto todos olhavam para mim, enxergavam uma mulher que dava conta de tudo.","Eu também queria acreditar nisso.","Era mais fácil.","Mais confortável."],"isFirst":false},{"type":"chapter","n":2,"title":"Aprendi a cuidar de todo mundo","body":["Porque admitir que eu estava cansada significava reconhecer que eu também precisava de cuidado.","E eu não sabia pedir cuidado.","Na verdade, nem sabia que precisava.","A vida seguiu.","Trabalhei.","Construí uma família.","Vieram novas alegrias.","Vieram novas preocupações.","Vieram novos filhos.","Cada nascimento renovava em mim o mesmo compromisso silencioso.","Eles crescerão cercados de amor.","Eles terão aquilo que eu senti falta.","Eles saberão que pertencem.","Fiz o melhor que consegui com aquilo que tinha.","Cometi erros.","Como toda mãe.","Mas nunca deixei de tentar."],"isFirst":false},{"type":"chapter","n":2,"title":"Aprendi a cuidar de todo mundo","body":["Hoje percebo que existe uma diferença entre fazer tudo por alguém e ensinar alguém a caminhar.","Naquela época, eu ainda não conhecia essa diferença.","Meu coração sempre dizia:","\"Faça mais um pouco.\"","E eu fazia.","Mais um esforço.","Mais um sacrifício.","Mais uma renúncia.","Sem perceber, fui construindo uma vida inteira voltada para o bem-estar das pessoas que eu amava.","Era uma vida bonita por fora.","Mas, dentro de mim, existia um espaço que permanecia vazio.","Um espaço que eu nunca parava para olhar.","Talvez porque tivesse medo do que encontraria.","Talvez porque acreditasse que cuidar de mim fosse egoísmo."],"isFirst":false},{"type":"chapter","n":2,"title":"Aprendi a cuidar de todo mundo","body":["Talvez porque eu simplesmente não soubesse como fazer isso.","Hoje compreendo que ninguém consegue oferecer equilíbrio quando vive permanentemente desequilibrado por dentro.","Mas eu ainda levaria muito tempo para descobrir essa verdade.","Antes disso, eu encontraria uma forma silenciosa de fugir de tudo aquilo que não conseguia sentir.","E, quando essa fuga apareceu, ela parecia inofensiva.","Foi assim que a compulsão encontrou espaço na minha vida.","Ela não entrou pela porta.","Entrou pelas pequenas brechas que eu nunca tive coragem de olhar."],"isFirst":false},{"type":"chapter","n":3,"title":"Quando deixei de me enxergar","body":["Existe uma pergunta que hoje faço a mim mesma com frequência.","Em que momento eu deixei de me enxergar?","Não consigo responder com uma data.","Também não consigo apontar um único acontecimento.","Foi acontecendo aos poucos.","Acho que é assim que as pessoas se perdem.","Não existe um dia em que acordamos diferentes.","São pequenas escolhas.","Pequenas renúncias.","Pequenos silêncios.","Quando percebemos, já não sabemos mais onde fomos parar."],"isFirst":true,"anchor":"3. Quando deixei de me enxergar"},{"type":"chapter","n":3,"title":"Quando deixei de me enxergar","body":["Durante muitos anos, eu me orgulhei de ser aquela pessoa que resolvia tudo.","Se existia um problema, eu procurava uma solução.","Se alguém precisava de ajuda, eu encontrava um jeito.","Se alguma dificuldade aparecia, eu seguia em frente.","As pessoas diziam que eu era forte.","E eu gostava de ouvir isso.","Ser forte parecia um elogio.","Hoje penso que, muitas vezes, era apenas um jeito bonito de dizer que eu nunca me permitia demonstrar fraqueza.","Eu sorria.","Trabalhava.","Cuidava da casa.","Cuidava dos filhos.","Cuidava da família.","Cuidava das responsabilidades.","Mas quase nunca perguntava a mim mesma uma coisa muito simples.","Como eu estou?"],"isFirst":false},{"type":"chapter","n":3,"title":"Quando deixei de me enxergar","body":["É curioso.","Eu sabia perceber quando um filho estava triste.","Quando meu marido estava preocupado.","Quando alguém próximo precisava de ajuda.","Mas não conseguia perceber a mim.","Era como se eu tivesse aprendido a olhar para todos, menos para dentro de mim.","Hoje entendo que isso não aconteceu por acaso.","Desde muito cedo aprendi que havia sempre alguma urgência maior do que os meus sentimentos.","Primeiro foi a perda.","Depois a falta.","Depois as responsabilidades.","Depois a maternidade.","Depois o trabalho.","Depois a família.","Sempre existia alguém precisando mais de mim do que eu mesma.","E eu aceitava esse lugar."],"isFirst":false},{"type":"chapter","n":3,"title":"Quando deixei de me enxergar","body":["Na verdade, eu acreditava que esse era o meu lugar.","Com o passar dos anos, fui me tornando especialista em esconder o cansaço.","Quando alguém perguntava se estava tudo bem, a resposta era automática.","— Está tudo bem.","Nem sempre estava.","Mas eu também não saberia explicar o que sentia.","Não era tristeza.","Não era exatamente felicidade.","Era como viver no automático.","Cumprindo uma tarefa atrás da outra.","Apagando um incêndio de cada vez.","Sem perceber que, enquanto eu tentava manter tudo em pé, alguma coisa dentro de mim estava desmoronando.","Hoje consigo reconhecer uma verdade que, durante muito tempo, me escapou."],"isFirst":false},{"type":"chapter","n":3,"title":"Quando deixei de me enxergar","body":["Ninguém consegue viver apenas para os outros sem, em algum momento, pagar um preço por isso.","Eu paguei.","E esse preço não apareceu de repente.","Ele começou a ser cobrado em pequenas parcelas.","Na ansiedade que eu não compreendia.","No vazio que eu não conseguia explicar.","Na necessidade constante de encontrar algum lugar onde minha mente descansasse por alguns instantes.","Na época, eu não fazia ideia de que estava procurando uma fuga.","Se alguém tivesse me perguntado, eu teria respondido que estava apenas cansada.","E talvez estivesse mesmo.","Mas não era um cansaço que uma boa noite de sono resolveria.","Era um cansaço da alma."],"isFirst":false},{"type":"chapter","n":3,"title":"Quando deixei de me enxergar","body":["Um cansaço de quem passou tantos anos sustentando o mundo que esqueceu que também precisava de alguém para sustentá-la.","Hoje olho para essa mulher com muito mais carinho do que julgamento.","Ela não era fraca.","Ela estava exausta.","E pessoas exaustas nem sempre fazem boas escolhas.","Foi exatamente nesse estado que encontrei aquilo que, por algum tempo, pareceu aliviar tudo.","Naquele momento, eu ainda não sabia.","Mas a porta que eu estava prestes a abrir mudaria completamente a minha vida."],"isFirst":false},{"type":"chapter","n":4,"title":"O silêncio da mente","body":["Se alguém tivesse me perguntado, naquela época, o que eu mais desejava, provavelmente eu responderia que precisava de férias.","Hoje sei que não era isso.","Eu precisava descansar de mim.","A minha vida nunca parava.","Existia sempre uma conta para pagar.","Uma preocupação para resolver.","Uma criança precisando de mim.","Uma decisão para tomar.","Um problema esperando solução.","Eu acordava pensando no que precisava fazer."],"isFirst":true,"anchor":"4. O silêncio da mente"},{"type":"chapter","n":4,"title":"O silêncio da mente","body":["Dormia pensando no que tinha ficado para o dia seguinte.","E, no meio de tudo isso, fui me esquecendo de como era simplesmente existir.","Não lembro da primeira vez em que joguei.","Curiosamente, essa nunca foi a parte mais importante da minha história.","O que nunca esqueci foi a sensação.","Pela primeira vez em muito tempo, minha cabeça ficou em silêncio.","As preocupações desapareceram por alguns instantes.","As contas deixaram de existir.","Os medos ficaram distantes.","A culpa pareceu fazer uma pausa.","Era como se alguém tivesse apertado um botão e desligado, por alguns minutos, todo o barulho que existia dentro de mim."],"isFirst":false},{"type":"chapter","n":4,"title":"O silêncio da mente","body":["Hoje sei que aquele silêncio tinha um preço.","Mas, naquele momento, eu ainda não fazia ideia.","Eu não estava procurando destruir minha vida.","Também não estava procurando enriquecer.","Eu estava procurando alívio.","E existe uma diferença enorme entre essas coisas.","O problema é que alguns alívios cobram caro demais.","No começo, tudo parecia pequeno.","Era só mais uma vez.","Depois eu recupero.","Depois eu paro.","Depois eu resolvo.","Essas palavras passaram a fazer parte dos meus pensamentos sem que eu percebesse.","O mais assustador é que nada muda de uma vez.","A compulsão não chega anunciando que vai destruir uma família."],"isFirst":false},{"type":"chapter","n":4,"title":"O silêncio da mente","body":["Ela chega oferecendo esperança.","Depois oferece confiança.","Depois oferece controle.","E, quando percebemos, já levou embora exatamente essas três coisas.","Ainda assim, durante muito tempo, eu acreditava que dominava a situação.","Criava regras.","Estabelecia limites.","Fazia promessas para mim mesma.","\"Essa será a última vez.\"","Quantas vezes repeti essa frase?","Não sei.","Perdi a conta.","O que nunca perdi foi a sinceridade com que fazia cada promessa.","Toda vez eu acreditava.","Toda vez eu realmente queria parar.","E toda vez descobria que querer já não era suficiente.","Foi aí que comecei a sentir uma vergonha que nunca havia experimentado antes."],"isFirst":false},{"type":"chapter","n":4,"title":"O silêncio da mente","body":["Não era apenas vergonha do que eu fazia.","Era vergonha de não conseguir cumprir aquilo que eu prometia para mim mesma.","A pior decepção não era decepcionar os outros.","Era perceber que eu já não confiava mais em mim.","Passei a esconder o problema.","Não porque tivesse orgulho dele.","Mas porque acreditava que resolveria tudo antes que alguém percebesse.","Durante muito tempo, vivi alimentando essa ilusão.","Hoje entendo que a compulsão cresce justamente onde existe silêncio.","Quanto menos eu falava, mais forte ela ficava.","Quanto mais eu escondia, mais espaço ela encontrava dentro de mim.","Sem perceber, comecei a viver duas vidas."],"isFirst":false},{"type":"chapter","n":4,"title":"O silêncio da mente","body":["Aquela que todos enxergavam.","E aquela que eu fazia de tudo para ninguém descobrir.","As duas conviviam dentro da mesma pessoa.","Mas, aos poucos, uma delas começou a consumir a outra.","E eu já não sabia por quanto tempo conseguiria sustentar aquela mentira."],"isFirst":false},{"type":"part","label":"PARTE II — QUANDO TUDO DESABOU","anchor":"PARTE II — QUANDO TUDO DESABOU"},{"type":"chapter","n":5,"title":"A mentira que mais machucava","body":["Sempre pensei que a pior consequência da compulsão fosse o dinheiro.","Hoje sei que estava enganada.","O dinheiro podia ser recuperado.","A confiança era muito mais difícil.","No começo, eu dizia pequenas mentiras.","Mentiras que, na minha cabeça, durariam apenas alguns dias.","\"Depois eu resolvo.\"","\"Depois eu conto.\"","\"Quando tudo voltar ao normal, ninguém vai sofrer.\"","Era assim que eu pensava.","Eu não mentia porque gostava de mentir."],"isFirst":true,"anchor":"5. A mentira que mais machucava"},{"type":"chapter","n":5,"title":"A mentira que mais machucava","body":["Mentia porque acreditava que ainda conseguiria consertar tudo antes que alguém descobrisse.","Essa esperança me mantinha em pé.","Mas também me afundava cada vez mais.","Cada mentira precisava de outra para continuar existindo.","Cada promessa não cumprida exigia uma nova explicação.","Sem perceber, comecei a gastar mais energia escondendo a verdade do que vivendo a minha própria vida.","Chegou um momento em que eu já não reconhecia a mulher que via no espelho.","Não porque tivesse deixado de amar minha família.","Muito pelo contrário.","Era justamente porque eu os amava que sentia tanta vergonha.","A vergonha virou minha companhia."],"isFirst":false},{"type":"chapter","n":5,"title":"A mentira que mais machucava","body":["Ela acordava comigo.","Dormia comigo.","Sentava ao meu lado durante o trabalho.","Voltava para casa comigo.","Ela estava em todos os lugares.","Passei a acreditar que, se as pessoas descobrissem quem eu realmente era, deixariam de me amar.","Hoje sei que esse pensamento era fruto da doença.","Mas, naquela época, parecia a mais absoluta verdade.","Existe uma imagem que nunca saiu da minha memória.","Eu chegava em casa.","Olhava para meus filhos.","Conversava normalmente.","Preparava as coisas do dia.","Sorria.","Por fora, parecia tudo igual.","Por dentro, eu me perguntava:","\"Se eles soubessem de tudo, ainda sentiriam orgulho de mim?\""],"isFirst":false},{"type":"chapter","n":5,"title":"A mentira que mais machucava","body":["Essa pergunta me machucava mais do que qualquer dívida.","Porque o dinheiro nunca foi a coisa mais importante da minha vida.","As pessoas sempre foram.","Talvez por isso a culpa fosse tão pesada.","Eu sabia que não estava ferindo apenas a mim.","Eu estava ferindo exatamente aqueles que eu mais queria proteger.","E essa foi a maior contradição que a compulsão trouxe para a minha vida.","Passei anos tentando construir uma família diferente daquela que eu havia conhecido na infância.","Queria oferecer segurança.","Amor.","Presença.","Proteção.","Então, sem perceber, comecei a levar insegurança para dentro da minha própria casa."],"isFirst":false},{"type":"chapter","n":5,"title":"A mentira que mais machucava","body":["Essa consciência não chegou de uma vez.","Ela foi aparecendo em pequenos momentos.","Num olhar.","Numa pergunta.","Num silêncio.","Até que ficou impossível continuar fingindo que estava tudo bem.","Durante muito tempo pensei que o meu maior medo fosse perder dinheiro.","Hoje sei que nunca foi.","Meu maior medo sempre foi perder as pessoas que eu amava.","E foi justamente esse medo que me fez esconder a verdade por tanto tempo.","A doença me fazia acreditar que o silêncio protegeria minha família.","Hoje entendo que era exatamente o contrário.","O silêncio era aquilo que mais nos afastava.","Mesmo assim, eu ainda não tinha forças para pedir ajuda."],"isFirst":false},{"type":"chapter","n":5,"title":"A mentira que mais machucava","body":["Continuava acreditando que resolveria tudo sozinha.","Continuava acreditando que bastava mais uma tentativa.","Mais uma promessa.","Mais uma oportunidade.","Eu ainda não entendia que existem batalhas que ninguém vence sozinho."],"isFirst":false},{"type":"chapter","n":6,"title":"Quando a máscara começou a cair","body":["Existe um momento em que a gente percebe que está cansado de fingir.","Não porque decidiu contar a verdade.","Mas porque já não consegue mais carregar o peso da mentira.","Foi assim comigo.","Durante muito tempo, consegui convencer as pessoas de que estava tudo bem.","Mas havia uma pessoa que eu já não conseguia convencer.","Eu mesma.","Era estranho.","Eu fazia tudo o que sempre fiz.","Trabalhava.","Cuidava da casa.","Conversava.","Sorria."],"isFirst":true,"anchor":"6. Quando a máscara começou a cair"},{"type":"chapter","n":6,"title":"Quando a máscara começou a cair","body":["Cumpria minhas responsabilidades.","Quem olhasse de fora dificilmente perceberia que alguma coisa estava acontecendo.","Mas eu sabia.","E isso já era suficiente para transformar qualquer dia comum em um dia pesado.","Passei a viver em estado de alerta.","Cada ligação fazia meu coração acelerar.","Cada mensagem inesperada me assustava.","Cada pergunta simples parecia esconder uma descoberta.","Era como viver esperando uma tempestade que eu sabia que chegaria, mas sem saber exatamente quando.","A ansiedade passou a fazer parte da minha rotina.","Na época, eu não entendia o que estava acontecendo.","Achava que era apenas preocupação."],"isFirst":false},{"type":"chapter","n":6,"title":"Quando a máscara começou a cair","body":["Hoje sei que meu corpo já não conseguia carregar sozinho tudo aquilo que eu insistia em esconder.","Dormir ficou mais difícil.","Descansar parecia impossível.","Mesmo quando o dia terminava, minha mente continuava trabalhando.","Repassava conversas.","Tentava encontrar soluções.","Criava planos que, no dia seguinte, já não faziam mais sentido.","Era um ciclo sem fim.","Quanto mais eu tentava controlar a situação, mais ela escapava das minhas mãos.","O mais doloroso é que ninguém ao meu redor conhecia a batalha que acontecia dentro de mim.","As pessoas enxergavam a mulher que sempre havia dado conta de tudo."],"isFirst":false},{"type":"chapter","n":6,"title":"Quando a máscara começou a cair","body":["Eu enxergava alguém que estava desmoronando em silêncio.","Hoje consigo entender por que não pedi ajuda antes.","Eu tinha medo.","Medo de decepcionar.","Medo de perder a confiança das pessoas que amava.","Medo de ser julgada.","Mas existia um medo ainda maior.","O medo de descobrir que, depois de contar a verdade, ninguém acreditaria que eu ainda poderia mudar.","A vergonha nos faz acreditar que o nosso pior erro passa a definir quem somos.","Eu acreditava nisso.","Achava que, quando descobrissem tudo, deixariam de enxergar a mulher, a mãe, a esposa, a profissional.","Veriam apenas o problema.","Hoje sei que estava errada."],"isFirst":false},{"type":"chapter","n":6,"title":"Quando a máscara começou a cair","body":["Mas, naquela época, esse pensamento parecia impossível de contestar.","Foi nesse período que comecei a perceber uma mudança dentro de mim.","Pela primeira vez, em vez de procurar uma nova desculpa, comecei a sentir vontade de parar de fugir.","Ainda não sabia como.","Ainda não tinha coragem.","Mas fugir já não fazia sentido.","Era como correr carregando uma mala cada vez mais pesada.","Chegava um momento em que continuar correndo exigia mais esforço do que simplesmente parar.","Sem perceber, a verdade começou a se aproximar de mim.","Não porque eu fosse forte."],"isFirst":false},{"type":"chapter","n":6,"title":"Quando a máscara começou a cair","body":["Mas porque já não existia força suficiente para continuar sustentando uma vida dividida em duas.","Hoje, olhando para trás, penso que aquele foi o começo da minha liberdade.","Na época, achei que fosse o começo do fim.","Eu estava enganada.","Era apenas o fim da mulher que acreditava que precisava enfrentar tudo sozinha."],"isFirst":false},{"type":"chapter","n":7,"title":"O dia em que a verdade entrou em casa","body":["Existe um momento em que não há mais para onde correr.","Eu passei muito tempo acreditando que conseguiria resolver tudo antes que a verdade aparecesse.","Não consegui.","A verdade sempre encontra um caminho.","Naquele dia, saí para trabalhar como em tantos outros.","Por fora, parecia apenas mais um dia comum.","Por dentro, alguma coisa já sabia que nada voltaria a ser como antes.","Durante o trabalho, tentei ocupar a mente."],"isFirst":true,"anchor":"7. O dia em que a verdade entrou em casa"},{"type":"chapter","n":7,"title":"O dia em que a verdade entrou em casa","body":["Fiz o que precisava ser feito.","Conversei.","Sorri quando era necessário.","Mas havia um peso diferente dentro de mim.","Eu sabia.","Ainda que ninguém tivesse me dito nada, eu sabia.","Quando o dia terminou e comecei o caminho de volta para casa, cada passo parecia mais pesado do que o anterior.","Eu não tinha medo de entrar pela porta.","Eu tinha medo do olhar que encontraria do outro lado.","Cheguei a um cruzamento.","O sinal fechou.","Esperei.","Os carros passavam diante de mim.","Foi ali que um pensamento atravessou minha mente.","\"E se eu fosse atropelada?\"","Até hoje, quando lembro desse instante, sinto necessidade de explicar.","Eu não queria morrer."],"isFirst":false},{"type":"chapter","n":7,"title":"O dia em que a verdade entrou em casa","body":["Nunca quis.","Eu amava a vida.","Amava meus filhos.","Amava minha família.","O que eu não sabia era como enfrentar o que me esperava em casa.","Naquele momento, ser atropelada parecia mais simples do que olhar nos olhos das pessoas que eu mais amava e admitir que eu havia perdido o controle.","O sinal abriu.","Eu atravessei.","Cada passo me aproximava não apenas da minha casa, mas da verdade.","Quando entrei, percebi imediatamente que alguma coisa havia mudado.","O silêncio tinha outro peso.","Os olhares tinham outra pergunta.","Não era mais possível fingir.","Durante tanto tempo eu temi aquele dia.","Imaginei mil cenários."],"isFirst":false},{"type":"chapter","n":7,"title":"O dia em que a verdade entrou em casa","body":["Criei incontáveis diálogos dentro da minha cabeça.","Nenhum deles se parecia com a realidade.","Porque a realidade tem um jeito próprio de desmontar qualquer roteiro.","As palavras custavam a sair.","A vergonha parecia ocupar todo o espaço da casa.","Pela primeira vez, não havia desculpas suficientes.","Não havia promessas capazes de apagar o que tinha acontecido.","Restava apenas a verdade.","E a verdade, por mais dolorosa que fosse, também tinha algo que eu não percebi naquele instante.","Ela encerrava uma guerra.","Durante anos, eu lutei para esconder.","Naquele dia, já não precisava esconder mais nada.","Eu ainda não sentia alívio.","Sentia medo."],"isFirst":false},{"type":"chapter","n":7,"title":"O dia em que a verdade entrou em casa","body":["Sentia culpa.","Sentia tristeza.","Sentia o peso das consequências.","Mas, sem perceber, também havia dado o primeiro passo para deixar de viver dividida.","Naquele momento, achei que minha vida tinha acabado.","Hoje sei que quem acabou foi a mentira.","A reconstrução ainda levaria muito tempo.","A confiança precisaria ser conquistada novamente.","As feridas não desapareceriam de um dia para o outro.","Mas foi naquele dia, o dia que eu mais temi durante tantos anos, que comecei a caminhar em direção à única liberdade que realmente existe.","A liberdade de não precisar mais esconder quem eu era."],"isFirst":false},{"type":"chapter","n":8,"title":"O peso das consequências","body":["Existe uma frase que ouvi certa vez e que nunca mais esqueci:","\"Toda escolha tem consequências.\"","Naquela época, eu já conhecia essa frase.","O que eu ainda não conhecia era o verdadeiro peso dela.","Quando a verdade veio à tona, não foi apenas a minha vida que mudou.","A compulsão nunca afeta uma única pessoa.","Ela entra na casa inteira.","Ela ocupa as conversas.","Silencia os sorrisos.","Rouba a tranquilidade."],"isFirst":true,"anchor":"8. O peso das consequências"},{"type":"chapter","n":8,"title":"O peso das consequências","body":["E faz com que todos se perguntem a mesma coisa:","\"Como chegamos até aqui?\"","Essa pergunta também era minha.","Eu me olhava e tentava entender em que momento tinha me afastado tanto da mulher que sempre procurei ser.","Mas, naquele instante, minhas perguntas já não eram as mais importantes.","Pela primeira vez em muitos anos, eu consegui enxergar além da minha própria dor.","Consegui enxergar o sofrimento que eu havia causado.","Olhar para isso foi uma das experiências mais difíceis da minha vida.","Não porque alguém precisasse me acusar.","Eu mesma já fazia isso o tempo todo.","A culpa não precisava de palavras.","Ela estava em cada silêncio."],"isFirst":false},{"type":"chapter","n":8,"title":"O peso das consequências","body":["Em cada olhar.","Na dificuldade de conversar sobre assuntos simples.","Na insegurança que passou a fazer parte da rotina da nossa casa.","Durante muito tempo, eu imaginei que pedir perdão resolveria tudo.","Hoje sei que existem dores que não desaparecem apenas porque alguém diz \"me desculpe\".","O perdão pode nascer em um instante.","A confiança, quase nunca.","Ela precisa de tempo.","De atitudes.","De constância.","De verdade.","Foi quando compreendi isso que percebi uma mudança dentro de mim.","Pela primeira vez, parei de procurar maneiras de convencer as pessoas de que eu havia mudado.","Entendi que ninguém precisava acreditar nas minhas palavras."],"isFirst":false},{"type":"chapter","n":8,"title":"O peso das consequências","body":["Elas tinham todo o direito de duvidar.","Durante muito tempo eu havia prometido coisas que não consegui cumprir.","Agora, cabia a mim viver de um jeito diferente.","Sem exigir confiança.","Sem cobrar compreensão.","Sem pedir que esquecessem o que havia acontecido.","Aprendi que reconstruir uma relação é como reconstruir uma casa depois de uma tempestade.","Não adianta pintar as paredes se os alicerces continuam comprometidos.","Era preciso começar de baixo.","Bem de baixo.","Às vezes, eu queria que tudo voltasse a ser como antes.","Hoje agradeço por isso não ter acontecido.","Porque a vida que existia antes também escondia uma dor que ninguém via."],"isFirst":false},{"type":"chapter","n":8,"title":"O peso das consequências","body":["A diferença é que agora ela estava exposta.","E aquilo que é exposto pode começar a ser tratado.","Foi um período de muitas lágrimas.","De conversas difíceis.","De dias em que eu mesma duvidava que conseguiria seguir em frente.","Mas havia uma decisão que, dessa vez, era diferente de todas as outras.","Eu não queria apenas deixar de jogar.","Eu queria voltar a ser uma mulher em quem minha família pudesse confiar.","Sabia que isso levaria tempo.","Talvez muito tempo.","E, pela primeira vez, aceitei que não existia atalho.","A reconstrução não aconteceria em grandes gestos.","Ela aconteceria nas pequenas escolhas de cada dia.","Na honestidade."],"isFirst":false},{"type":"chapter","n":8,"title":"O peso das consequências","body":["Na transparência.","Na coragem de continuar presente mesmo quando era doloroso enfrentar as consequências das minhas próprias atitudes.","Foi nesse período que comecei a entender o verdadeiro significado da responsabilidade.","Responsabilidade não é viver sem errar.","É não fugir quando chega a hora de responder pelos próprios erros.","Essa talvez tenha sido a lição mais difícil da minha vida.","E também a mais transformadora."],"isFirst":false},{"type":"part","label":"PARTE III — UM NOVO MODO DE VIVER","anchor":"PARTE III — UM NOVO MODO DE VIVER"},{"type":"chapter","n":9,"title":"O primeiro dia de uma nova vida","body":["As pessoas costumam pensar que o dia mais difícil é aquele em que tudo é descoberto.","Para mim, os dias mais difíceis vieram depois.","Quando a verdade apareceu, a mentira acabou.","Mas a compulsão não desapareceu no mesmo instante.","Ela continuava ali.","E eu também precisava continuar.","Foi então que compreendi uma das maiores diferenças entre querer mudar e realmente mudar.","Querer nasce em um momento.","Mudar acontece todos os dias."],"isFirst":true,"anchor":"9. O primeiro dia de uma nova vida"},{"type":"chapter","n":9,"title":"O primeiro dia de uma nova vida","body":["Nos primeiros dias, tudo parecia estranho.","Era como aprender a caminhar novamente.","Eu precisava reaprender coisas que, para a maioria das pessoas, pareciam simples.","Lidar com a ansiedade.","Enfrentar a culpa.","Aceitar que eu não podia apagar o passado.","Conviver com a desconfiança.","Olhar para mim mesma sem fugir.","Nada disso era fácil.","Havia momentos em que eu queria acelerar o tempo.","Queria que todos acreditassem novamente em mim.","Queria que a dor desaparecesse.","Queria que tudo voltasse ao normal.","Mas eu começava a entender que não existia mais \"normal\".","Existia uma nova vida sendo construída.","E ela precisaria de bases diferentes."],"isFirst":false},{"type":"chapter","n":9,"title":"O primeiro dia de uma nova vida","body":["Foi nesse período que ouvi uma frase que mudaria completamente a forma como eu enxergava a recuperação.","Só por hoje.","No começo, achei aquela ideia pequena demais.","Como assim \"só por hoje\"?","Eu queria resolver minha vida inteira.","Queria garantir que nunca mais erraria.","Queria ter certeza de que jamais voltaria a cair.","Mas ninguém consegue viver o amanhã antes que ele chegue.","Eu estava tentando carregar um peso que não me pertencia.","A única coisa que realmente estava nas minhas mãos era o dia que eu estava vivendo.","Só este.","Nem ontem.","Nem amanhã.","Hoje.","Essa compreensão não eliminou a ansiedade de uma hora para outra."],"isFirst":false},{"type":"chapter","n":9,"title":"O primeiro dia de uma nova vida","body":["Mas ela diminuiu o tamanho da caminhada.","Em vez de pensar:","\"Nunca mais.\"","Comecei a pensar:","\"Hoje eu farei a coisa certa.\"","E, quando o amanhã chegava, a decisão era a mesma.","Mais uma vez.","Só por hoje.","Descobri que a recuperação não acontece em grandes momentos.","Ela acontece em escolhas aparentemente pequenas.","Levantar da cama quando a vontade é desistir.","Ser honesta mesmo quando a verdade constrange.","Pedir ajuda antes que o problema cresça.","Aceitar que existem dias bons e dias difíceis.","Continuar mesmo assim.","Houve dias em que achei que não conseguiria.","Dias em que a vergonha ainda gritava mais alto do que a esperança."],"isFirst":false},{"type":"chapter","n":9,"title":"O primeiro dia de uma nova vida","body":["Dias em que chorei sozinha.","Dias em que pensei que jamais recuperaria a confiança das pessoas que eu amava.","Mas, mesmo nesses dias, havia uma decisão que eu podia tomar.","A de permanecer no caminho.","Hoje percebo que a recuperação nunca foi sobre me tornar perfeita.","Foi sobre aprender a ser verdadeira.","E existe uma paz muito diferente quando deixamos de gastar energia escondendo quem somos.","A verdade nem sempre facilita a vida.","Mas ela torna a vida possível.","Foi assim que comecei a descobrir que viver \"só por hoje\" não era aceitar pouco.","Era aprender que uma vida inteira é construída exatamente da mesma maneira."],"isFirst":false},{"type":"chapter","n":9,"title":"O primeiro dia de uma nova vida","body":["Um dia de cada vez."],"isFirst":false},{"type":"chapter","n":10,"title":"Aprender a olhar para o espelho","body":["Durante muito tempo, eu evitava olhar para mim.","Não estou falando apenas do espelho da parede.","Estou falando daquele espelho que existe dentro de nós.","O lugar onde ninguém consegue mentir.","Durante anos, eu convivi com uma voz que repetia a mesma frase:","\"Você estragou tudo.\"","Ela aparecia quando eu acordava.","Quando eu deitava.","Quando lembrava das pessoas que machuquei.","Quando pensava nas oportunidades que perdi."],"isFirst":true,"anchor":"10. Aprender a olhar para o espelho"},{"type":"chapter","n":10,"title":"Aprender a olhar para o espelho","body":["Era uma acusação constante.","No começo da recuperação, achei que precisaria lutar contra a compulsão.","Depois descobri que também precisava aprender a lidar com a culpa.","Existe uma diferença entre culpa e responsabilidade.","A responsabilidade nos faz mudar.","A culpa, quando não é bem compreendida, apenas nos mantém presos ao passado.","Demorei para entender isso.","Eu acreditava que continuar me castigando era uma forma de demonstrar arrependimento.","Como se sofrer bastante pudesse apagar tudo o que havia acontecido.","Mas sofrimento não muda o passado.","O que muda o futuro são as escolhas que fazemos depois dele."],"isFirst":false},{"type":"chapter","n":10,"title":"Aprender a olhar para o espelho","body":["Foi uma das lições mais difíceis que aprendi.","Aceitar que eu jamais poderia apagar a história.","Mas poderia escrever os capítulos seguintes de uma maneira diferente.","Houve dias em que me perguntava se eu merecia ser feliz novamente.","Hoje essa pergunta me entristece.","Porque ela revela o quanto eu ainda confundia erro com identidade.","Eu havia errado.","Muito.","Mas eu não era apenas os meus erros.","Essa compreensão não nasceu de um dia para o outro.","Ela foi sendo construída lentamente.","Na convivência.","Nas conversas.","Na recuperação.","Na coragem de continuar mesmo quando eu mesma ainda duvidava de mim.","Passei a perceber pequenas mudanças."],"isFirst":false},{"type":"chapter","n":10,"title":"Aprender a olhar para o espelho","body":["Dormia um pouco melhor.","Sorria sem sentir que estava fingindo.","Voltava a fazer planos.","A esperança, que durante tanto tempo parecia distante, começou a reaparecer.","Não de forma grandiosa.","Ela voltou discretamente.","Como quem bate à porta sem querer incomodar.","E eu finalmente a deixei entrar.","Também aprendi que pedir perdão é importante.","Mas viver de forma diferente é ainda mais importante.","As pessoas não precisavam ouvir todos os dias que eu estava arrependida.","Elas precisavam perceber, com o tempo, que eu estava me tornando uma pessoa mais verdadeira.","Foi quando compreendi que confiança não nasce de discursos."],"isFirst":false},{"type":"chapter","n":10,"title":"Aprender a olhar para o espelho","body":["Ela nasce da repetição de atitudes corretas.","Um dia.","Depois outro.","E mais outro.","Foi assim que comecei, aos poucos, a fazer as pazes comigo mesma.","Não porque eu tivesse esquecido o passado.","Mas porque parei de permitir que ele decidisse quem eu seria dali em diante.","Hoje ainda olho para trás com tristeza por muitas escolhas.","Seria desonesto dizer o contrário.","Mas também olho com gratidão.","Porque foi atravessando o pior momento da minha vida que aprendi aquilo que talvez nunca tivesse aprendido de outra maneira.","Que a nossa história pode explicar quem fomos.","Mas ela nunca precisa limitar quem ainda podemos nos tornar."],"isFirst":false},{"type":"chapter","n":10,"title":"Aprender a olhar para o espelho","body":["Naquele dia em que atravessei a rua imaginando como enfrentaria minha família, achei que minha vida tinha acabado.","Hoje, quando lembro daquela mulher, sinto vontade de abraçá-la.","Não para dizer que tudo seria fácil.","Mas para dizer algo que ela ainda não conseguia acreditar.","Você vai voltar a encontrar a si mesma.","E, quando isso acontecer, vai descobrir que viver em paz vale muito mais do que viver escondida."],"isFirst":false},{"type":"chapter","n":11,"title":"A confiança se reconstrói em silêncio","body":["Existe uma frase que ouvi muitas vezes depois que minha vida mudou:","— \"O tempo cura tudo.\"","Hoje penso diferente.","O tempo, sozinho, não cura.","O tempo apenas passa.","O que cura são as escolhas feitas durante esse tempo.","Depois que a verdade veio à tona, eu queria consertar tudo rapidamente.","Queria devolver a tranquilidade à minha família.","Queria apagar o medo.","Queria que todos voltassem a confiar em mim."],"isFirst":true,"anchor":"11. A confiança se reconstrói em silêncio"},{"type":"chapter","n":11,"title":"A confiança se reconstrói em silêncio","body":["Mas aprendi que confiança não é algo que se pede.","É algo que se conquista.","E se conquista, quase sempre, em silêncio.","Não foram grandes discursos que mudaram minha história.","Foram pequenas atitudes.","Foi fazer o que eu dizia que faria.","Foi aprender a dizer a verdade, mesmo quando ela era desconfortável.","Foi aceitar perguntas sem me sentir ofendida.","Foi compreender que as pessoas tinham o direito de sentir medo.","Elas também estavam se recuperando.","Essa foi uma das maiores descobertas da minha caminhada.","Eu não era a única tentando reconstruir a vida.","Minha família também precisava reaprender a confiar."],"isFirst":false},{"type":"chapter","n":11,"title":"A confiança se reconstrói em silêncio","body":["Cada um viveu esse processo de um jeito.","Com seu tempo.","Com suas dúvidas.","Com suas feridas.","Durante muito tempo, eu quis que percebessem minha mudança.","Depois entendi que minha tarefa não era convencer ninguém.","Era apenas continuar mudando.","A confiança começou a voltar sem fazer barulho.","Ela apareceu em uma conversa mais leve.","Em um sorriso espontâneo.","Em um olhar que já não carregava apenas preocupação.","Em um dia comum, quando percebi que estávamos vivendo sem que o passado ocupasse todos os espaços da casa.","Foi aí que compreendi algo muito bonito.","A recuperação não devolveu a vida que eu tinha."],"isFirst":false},{"type":"chapter","n":11,"title":"A confiança se reconstrói em silêncio","body":["Ela me deu uma vida mais verdadeira.","Hoje ainda existem cicatrizes.","E elas sempre existirão.","Mas cicatrizes não são sinais de derrota.","São marcas de quem sobreviveu.","Aprendi que o amor não é a ausência de erros.","É a disposição de permanecer, de reconstruir e de recomeçar quando ainda existe verdade.","Foi isso que começou a acontecer dentro da nossa casa.","Não de uma vez.","Um dia de cada vez.","Como quase tudo o que realmente importa."],"isFirst":false},{"type":"chapter","n":12,"title":"Só por hoje","body":["Durante muito tempo, achei que \"Só por Hoje\" fosse apenas uma frase.","Hoje sei que ela se tornou uma maneira de viver.","No começo, ela significava apenas não jogar.","Depois, passou a significar muito mais.","Só por hoje, eu escolho ser honesta.","Só por hoje, eu escolho pedir ajuda quando preciso.","Só por hoje, eu escolho não fugir dos meus sentimentos.","Só por hoje, eu escolho cuidar de quem amo sem esquecer de cuidar de mim."],"isFirst":true,"anchor":"12. Só por hoje"},{"type":"chapter","n":12,"title":"Só por hoje","body":["Percebi que ninguém consegue viver uma vida inteira de uma só vez.","Vivemos dias.","E são os dias que constroem uma vida.","Foi tentando acertar apenas o dia de hoje que descobri algo extraordinário.","Os dias começaram a se transformar em semanas.","As semanas em meses.","Os meses em anos.","E, sem perceber, eu já não era a mesma mulher.","Não porque o passado tivesse desaparecido.","Mas porque ele deixou de dirigir meus passos.","Hoje continuo aprendendo.","Continuo errando em muitas coisas.","Continuo sendo imperfeita.","Mas existe uma diferença enorme.","Já não preciso esconder minhas imperfeições.","A verdade deixou de ser uma ameaça."],"isFirst":false},{"type":"chapter","n":12,"title":"Só por hoje","body":["Ela se tornou minha maior aliada.","Se alguém me perguntasse hoje qual foi a maior conquista da minha recuperação, eu não responderia que foi deixar de jogar.","Responderia que foi voltar a viver em paz comigo mesma.","A compulsão me ensinou o tamanho da dor que uma escolha pode causar.","A recuperação me ensinou o tamanho da esperança que uma escolha também pode construir.","Todos os dias recebo uma nova oportunidade.","Não para apagar o ontem.","Mas para honrá-lo vivendo de maneira diferente.","É isso que significa \"Só por Hoje\".","Não é pensar pequeno.","É compreender que Deus, a vida e o amor sempre nos encontram no presente."],"isFirst":false},{"type":"chapter","n":12,"title":"Só por hoje","body":["E é somente no presente que podemos escolher quem queremos ser."],"isFirst":false},{"type":"epilogue","title":"Epílogo","subtitle":"Um novo modo de viver","body":["Às vezes volto, em pensamento, àquela mulher parada diante da faixa de pedestres.","Consigo vê-la com clareza.","Ela segura a bolsa com força.","O coração está acelerado.","Os olhos estão cansados.","Ela acredita que, ao atravessar aquela rua, perderá tudo.","Hoje eu gostaria de caminhar até ela.","Não para mudar o que aconteceu.","Nem para impedir que a verdade aparecesse.","A verdade precisava aparecer."],"isFirst":true,"anchor":"Epílogo — Um novo modo de viver"},{"type":"epilogue","title":"Epílogo","body":["Eu apenas seguraria sua mão por alguns instantes.","E diria:","\"Você ainda não sabe, mas este não é o fim da sua história.\"","Ela provavelmente não acreditaria.","Talvez chorasse.","Talvez dissesse que destruiu tudo.","Talvez repetisse que não existe mais saída.","Eu entenderia.","Porque um dia também pensei assim.","Mas hoje conheço um final que ela ainda não consegue enxergar.","Sei que ela voltará a sorrir sem fingir.","Sei que voltará a dormir com a consciência em paz.","Sei que descobrirá que pedir ajuda não diminui ninguém.","Ao contrário.","É um dos maiores atos de coragem que existem."],"isFirst":false},{"type":"epilogue","title":"Epílogo","body":["Também sei que ela aprenderá uma verdade que transformou a sua vida.","Nenhuma dor é maior do que a possibilidade de recomeçar.","O passado nunca deixará de existir.","Ele faz parte de mim.","Não o escondo.","Não o romantizo.","Não me orgulho dele.","Mas também não permito que ele seja a última palavra sobre quem eu sou.","Hoje, quando olho para minha família, sinto uma gratidão difícil de colocar em palavras.","Não porque tudo tenha sido perfeito.","Foi justamente porque não foi.","O amor que permaneceu depois da verdade é muito mais forte do que o amor que existia enquanto eu escondia quem era.","Aprendi que a confiança pode ser reconstruída."],"isFirst":false},{"type":"epilogue","title":"Epílogo","body":["Que a esperança pode renascer.","Que a vergonha perde força quando encontra a verdade.","E que ninguém precisa caminhar sozinho.","Escrevi estas páginas porque durante muito tempo acreditei que minha história terminaria na culpa.","Ela não terminou.","Ela recomeçou.","Se você chegou até aqui carregando o peso de um erro, de uma culpa ou de uma luta silenciosa, desejo que encontre coragem para dar o primeiro passo.","Não o passo perfeito.","Apenas o primeiro.","Talvez hoje você ainda não consiga enxergar o caminho inteiro.","Eu também não conseguia.","Bastou atravessar uma rua.","Depois veio outra.","E mais outra.","Assim é a vida."],"isFirst":false},{"type":"epilogue","title":"Epílogo","body":["Ela nunca nos pede todos os passos de uma vez.","Pede apenas o próximo.","Só por hoje.","E, às vezes, é exatamente isso que basta.","Fim."],"isFirst":false},{"type":"section","label":"Para minha família","continued":false,"body":["Existem palavras que nunca serão suficientes para agradecer a quem permaneceu ao meu lado.","Também não existem palavras capazes de apagar toda a dor que causei.","Mas existe uma vida inteira para demonstrar aquilo que um dia eu apenas prometia.","A vocês, que sofreram comigo e, muitas vezes, por minha causa...","Obrigada.","Obrigada por não desistirem quando eu mesma já não acreditava em mim.","Obrigada por celebrarem cada pequena vitória.","Obrigada por compreenderem que confiança não volta em um dia, mas pode voltar.","Vocês foram parte da minha recuperação.","Não porque resolveram meus problemas."],"anchor":"Para minha família"},{"type":"section","label":null,"continued":true,"body":["Mas porque me deram motivos para continuar.","Espero que, daqui para frente, minhas atitudes continuem dizendo aquilo que nenhuma frase conseguirá expressar completamente.","Eu amo vocês.","E agradeço todos os dias pela oportunidade de reconstruir nossa história."]},{"type":"section","label":"Uma carta para quem ainda sofre","continued":false,"body":["Se você está lendo estas últimas páginas e ainda vive escondendo uma luta, quero conversar diretamente com você.","Eu sei como é acordar prometendo que será diferente.","Sei como é dormir acreditando que amanhã tudo será resolvido.","Também sei como é sentir vergonha de pedir ajuda.","Durante muito tempo pensei que eu era o problema.","Hoje entendo que eu tinha um problema.","Existe uma diferença enorme.","Se você ainda não conseguiu parar...","Não desista de si.","Se caiu ontem...","Levante hoje.","Se caiu hoje...","Tente novamente amanhã.","Não conte quantas vezes você caiu.","Conte quantas vezes decidiu levantar.","Talvez ninguém saiba da sua luta."],"anchor":"Uma carta para quem ainda sofre"},{"type":"section","label":null,"continued":true,"body":["Talvez todos saibam.","Isso muda muito menos do que você imagina.","O que realmente muda uma vida é a decisão de parar de fugir.","Você não precisa enfrentar tudo sozinho.","Eu também achei que precisava.","Estava errada.","Se minha história conseguiu chegar até você, talvez exista um motivo.","Talvez este seja o seu primeiro passo.","E, às vezes, um primeiro passo muda uma vida inteira."]},{"type":"section","label":"Agradecimentos","continued":false,"body":["Agradecer é reconhecer que ninguém atravessa as maiores tempestades sozinho.","Primeiramente, agradeço a Deus.","Mesmo quando eu me afastei de mim mesma, acredito que Ele nunca se afastou de mim.","À minha família, que viveu as consequências das minhas escolhas.","Sei que nem sempre foi fácil.","Obrigada por permanecerem quando seria compreensível desistir.","Aos profissionais que me acolheram e mostraram que pedir ajuda não é sinal de fraqueza, mas de coragem.","A cada pessoa que, direta ou indiretamente, fez parte da minha recuperação, deixo aqui minha gratidão."],"anchor":"Agradecimentos"},{"type":"section","label":null,"continued":true,"body":["Também agradeço aos companheiros que caminham diariamente na recuperação.","Respeitando o princípio do anonimato, não citarei nomes nem instituições.","Mas saibam que muitas das lições que transformaram minha vida nasceram da escuta, da identificação e da esperança compartilhada.","Por fim, agradeço à mulher que um dia fui.","Mesmo perdida, ela encontrou forças para dar o primeiro passo.","Sem ela, eu jamais teria conhecido a mulher que sou hoje."]},{"type":"section","label":"Nota aos familiares","continued":false,"body":["Se você é familiar de alguém que enfrenta uma dependência, talvez algumas páginas deste livro tenham despertado sentimentos difíceis.","Raiva.","Tristeza.","Medo.","Cansaço.","Todos eles são legítimos.","Durante muito tempo eu enxerguei apenas o meu sofrimento.","A recuperação me ensinou que a doença também alcança quem ama.","Nenhum familiar escolhe viver essa realidade.","Assim como nenhuma pessoa escolhe adoecer.","Isso não elimina a responsabilidade de quem causa dor.","Mas ajuda a compreender que existe uma doença por trás de muitos comportamentos que parecem incompreensíveis."],"anchor":"Nota aos familiares"},{"type":"section","label":null,"continued":true,"body":["Se você continua caminhando ao lado de alguém em recuperação, desejo que encontre força.","Se precisou se afastar para proteger a si mesmo, desejo que encontre paz.","E, acima de tudo, desejo que nunca perca a esperança.","A recuperação é possível.","Ela exige verdade.","Tempo.","Responsabilidade.","E muito amor.","Mas ela é possível."]},{"type":"section","label":"Nota aos profissionais que cuidam de pessoas com dependência","continued":false,"body":["Este livro não foi escrito por uma especialista.","Foi escrito por alguém que viveu a experiência da dependência.","Por isso, meu primeiro sentimento é de respeito por todos os profissionais que dedicam suas vidas a cuidar de pessoas que enfrentam essa realidade.","Psicólogos.","Psiquiatras.","Médicos.","Terapeutas.","Assistentes sociais.","Conselheiros.","Lideranças espirituais.","E tantos outros que, diariamente, acolhem histórias parecidas com a minha.","Vocês enxergam pessoas quando muitos enxergam apenas o problema.","Meu desejo é que estas páginas também possam contribuir para ampliar o olhar sobre quem sofre."],"anchor":"Nota aos profissionais que cuidam de pessoas com dependência"},{"type":"section","label":null,"continued":true,"body":["Por trás de cada dependência existe uma história.","Existe uma família.","Existem perdas.","Existe vergonha.","Existe medo.","Mas também existe esperança.","Espero que este livro ajude a lembrar que ninguém pode ser reduzido ao seu pior momento.","Toda pessoa é maior do que a doença que enfrenta.","Foi isso que precisei descobrir para reconstruir minha vida."]},{"type":"section","label":"Última página","continued":false,"body":["Só por hoje...","Se hoje você sente que sua vida saiu do controle...","Só por hoje, não desista.","Se hoje a vergonha diz que você nunca mais será a mesma pessoa...","Só por hoje, não acredite nela.","Se hoje você acha que destruiu tudo...","Só por hoje, lembre-se de que enquanto existe vida, existe possibilidade de reconstrução.","Se hoje você não consegue confiar em si mesmo...","Empreste sua esperança a quem acredita em você.","Até que ela volte.","Se hoje você está cansado...","Descanse.","Mas não desista.","E, se hoje você não souber como continuar...","Faça apenas o próximo passo.","Foi assim que eu reencontrei minha vida.","Só por hoje."],"anchor":"Última página"},{"type":"section","label":"Sobre a autora","placeholder":true,"body":[],"anchor":"Sobre a autora"},{"type":"backcover"}]</script>
+<script>
+const PAGES = JSON.parse(document.getElementById('pages-data').textContent);
+let current = 0;
+let animating = false;
+
+const frontEl = document.getElementById('front');
+const backEl = document.getElementById('back');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const pageCounter = document.getElementById('pageCounter');
+const tocBtn = document.getElementById('tocBtn');
+const tocDrawer = document.getElementById('tocDrawer');
+const tocPanel = document.getElementById('tocPanel');
+const playBtn = document.getElementById('playBtn');
+const narrationNote = document.getElementById('narrationNote');
+
+function esc(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getReadableText(p){
+  if(!p) return '';
+  if(p.type === 'cover') return `${p.title}. ${p.subtitle}.`;
+  if(p.type === 'backcover') return 'Só por hoje.';
+  if(p.type === 'quote') return p.lines.join(' ');
+  if(p.type === 'toc') return '';
+  if(p.type === 'part') return p.label;
+  if(p.type === 'section'){
+    if(p.placeholder) return '';
+    return `${p.label ? p.label + '. ' : ''}${(p.body||[]).join(' ')}`;
+  }
+  if(p.type === 'chapter'){
+    const head = p.isFirst ? `Capítulo ${p.n}. ${p.title}. ` : '';
+    return head + (p.body||[]).join(' ');
+  }
+  if(p.type === 'epilogue'){
+    const head = p.isFirst ? `${p.title}. ${p.subtitle||''}. ` : '';
+    return head + (p.body||[]).join(' ');
+  }
+  return '';
+}
+
+function renderPage(p){
+  if(!p) return '<div class="page-inner"></div>';
+  let html = '';
+  if(p.type === 'cover'){
+    html = `<div class="page-inner cover-page">
+      <div class="flame-wrap"><div class="flame"></div></div>
+      <div class="title">${esc(p.title)}</div>
+      <div class="subtitle">${esc(p.subtitle)}</div>
+      <div class="rule"></div>
+      <div class="hint">toque para abrir</div>
+    </div>`;
+  } else if(p.type === 'backcover'){
+    html = `<div class="page-inner backcover-page">
+      <div class="flame-wrap"><div class="flame"></div></div>
+      <div class="brand">Só por hoje.</div>
+    </div>`;
+  } else if(p.type === 'quote'){
+    html = `<div class="page-inner quote-page">${p.lines.map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;
+  } else if(p.type === 'toc'){
+    const items = p.entries.map(e => {
+      if(e.heading) return `<div class="toc-item heading">${esc(e.label)}</div>`;
+      return `<div class="toc-item${e.indent?' indent':''}" data-jump="${esc(e.label)}">${esc(e.label)}</div>`;
+    }).join('');
+    html = `<div class="page-inner toc-page">
+      <h2>Sumário</h2>
+      <div class="toc-list">${items}</div>
+    </div>`;
+  } else if(p.type === 'part'){
+    html = `<div class="page-inner part-page">
+      <div class="rule"></div>
+      <h1>${esc(p.label)}</h1>
+      <div class="rule"></div>
+    </div>`;
+  } else if(p.type === 'chapter'){
+    const body = p.body.map(l=>`<p>${esc(l)}</p>`).join('');
+    html = `<div class="page-inner chapter-page">
+      ${p.isFirst ? `<div class="eyebrow">Capítulo ${p.n}</div><h2>${esc(p.title)}</h2>` : ''}
+      <div class="body">${body}</div>
+    </div>`;
+  } else if(p.type === 'epilogue'){
+    const body = p.body.map(l=>`<p>${esc(l)}</p>`).join('');
+    html = `<div class="page-inner chapter-page">
+      ${p.isFirst ? `<div class="eyebrow">${esc(p.title)}</div>${p.subtitle?`<h2>${esc(p.subtitle)}</h2>`:''}` : ''}
+      <div class="body">${body}</div>
+    </div>`;
+  } else if(p.type === 'section'){
+    const body = p.placeholder
+      ? `<div class="placeholder">[ Texto a inserir ]</div>`
+      : `<div class="body">${p.body.map(l=>`<p>${esc(l)}</p>`).join('')}</div>`;
+    html = `<div class="page-inner section-page">
+      ${p.label ? `<h2>${esc(p.label)}</h2>` : ''}
+      ${body}
+    </div>`;
+  }
+  return html + `<div class="pageno">${p.type==='cover'||p.type==='backcover' ? '' : ''}</div>`;
+}
+
+function pageNoLabel(i){
+  const p = PAGES[i];
+  if(p.type === 'cover' || p.type === 'backcover') return '';
+  return String(i);
+}
+
+function paint(){
+  frontEl.innerHTML = renderPage(PAGES[current]);
+  backEl.innerHTML = renderPage(PAGES[current+1]);
+  updateChrome();
+}
+
+function updateChrome(){
+  pageCounter.textContent = `${current+1} / ${PAGES.length}`;
+  prevBtn.disabled = current <= 0 || animating;
+  nextBtn.disabled = current >= PAGES.length-1 || animating;
+}
+
+function goNext(){
+  if(animating || current >= PAGES.length-1) return;
+  animating = true; updateChrome();
+  backEl.innerHTML = renderPage(PAGES[current+1]);
+  frontEl.style.transformOrigin = 'left center';
+  requestAnimationFrame(()=>{
+    frontEl.classList.add('flip-next');
+    frontEl.style.transform = 'rotateY(-172deg)';
+  });
+  frontEl.addEventListener('transitionend', onNextEnd, {once:true});
+}
+function onNextEnd(){
+  current += 1;
+  frontEl.classList.remove('flip-next');
+  frontEl.classList.add('no-anim');
+  frontEl.style.transform = 'rotateY(0deg)';
+  frontEl.innerHTML = renderPage(PAGES[current]);
+  backEl.innerHTML = renderPage(PAGES[current+1]);
+  void frontEl.offsetWidth;
+  frontEl.classList.remove('no-anim');
+  animating = false;
+  updateChrome();
+  if(narrating) speakCurrentAndAdvance();
+}
+
+function goPrev(){
+  if(animating || current <= 0) return;
+  animating = true; updateChrome();
+  backEl.innerHTML = renderPage(PAGES[current-1]);
+  frontEl.style.transformOrigin = 'right center';
+  requestAnimationFrame(()=>{
+    frontEl.classList.add('flip-prev');
+    frontEl.style.transform = 'rotateY(172deg)';
+  });
+  frontEl.addEventListener('transitionend', onPrevEnd, {once:true});
+}
+function onPrevEnd(){
+  current -= 1;
+  frontEl.classList.remove('flip-prev');
+  frontEl.classList.add('no-anim');
+  frontEl.style.transformOrigin = 'left center';
+  frontEl.style.transform = 'rotateY(0deg)';
+  frontEl.innerHTML = renderPage(PAGES[current]);
+  backEl.innerHTML = renderPage(PAGES[current+1]);
+  void frontEl.offsetWidth;
+  frontEl.classList.remove('no-anim');
+  animating = false;
+  updateChrome();
+}
+
+function jumpTo(index){
+  if(animating || index === current) { tocDrawer.classList.remove('open'); return; }
+  current = index;
+  frontEl.classList.add('no-anim');
+  frontEl.style.transformOrigin = 'left center';
+  frontEl.style.transform = 'rotateY(0deg)';
+  frontEl.innerHTML = renderPage(PAGES[current]);
+  backEl.innerHTML = renderPage(PAGES[current+1]);
+  void frontEl.offsetWidth;
+  frontEl.classList.remove('no-anim');
+  updateChrome();
+  tocDrawer.classList.remove('open');
+}
+
+document.getElementById('navRight').addEventListener('click', ()=>{ stopNarration(); goNext(); });
+document.getElementById('navLeft').addEventListener('click', ()=>{ stopNarration(); goPrev(); });
+nextBtn.addEventListener('click', ()=>{ stopNarration(); goNext(); });
+prevBtn.addEventListener('click', ()=>{ stopNarration(); goPrev(); });
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'ArrowRight'){ stopNarration(); goNext(); }
+  if(e.key === 'ArrowLeft'){ stopNarration(); goPrev(); }
+  if(e.key === 'Escape') tocDrawer.classList.remove('open');
+});
+
+let touchStartX = null;
+document.getElementById('stage').addEventListener('touchstart', (e)=>{ touchStartX = e.touches[0].clientX; }, {passive:true});
+document.getElementById('stage').addEventListener('touchend', (e)=>{
+  if(touchStartX===null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if(Math.abs(dx) > 50){ stopNarration(); dx < 0 ? goNext() : goPrev(); }
+  touchStartX = null;
+}, {passive:true});
+
+tocBtn.addEventListener('click', ()=>{
+  buildToc();
+  tocDrawer.classList.add('open');
+});
+tocDrawer.addEventListener('click', (e)=>{ if(e.target === tocDrawer) tocDrawer.classList.remove('open'); });
+
+// ---------- Narração (Web Speech API — voz do navegador/aparelho) ----------
+const synth = window.speechSynthesis;
+let narrating = false;
+let ptVoice = null;
+
+function loadVoices(){
+  const voices = synth ? synth.getVoices() : [];
+  if(voices && voices.length){
+    ptVoice = voices.find(v => v.lang === 'pt-BR') ||
+              voices.find(v => v.lang && v.lang.startsWith('pt')) ||
+              null;
+  }
+}
+if(synth){
+  loadVoices();
+  synth.addEventListener('voiceschanged', loadVoices);
+}
+
+function speakCurrentAndAdvance(){
+  if(!narrating) return;
+  if(!synth){ stopNarration(); return; }
+  const text = getReadableText(PAGES[current]);
+  if(!text){
+    if(current < PAGES.length - 1){ goNext(); }
+    else { stopNarration(); }
+    return;
+  }
+  narrationNote.classList.add('show');
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'pt-BR';
+  if(ptVoice) utter.voice = ptVoice;
+  utter.rate = 0.98;
+  utter.pitch = 1;
+  utter.onend = () => {
+    if(!narrating) return;
+    if(current < PAGES.length - 1){ goNext(); }
+    else { stopNarration(); }
+  };
+  utter.onerror = () => { stopNarration(); };
+  synth.speak(utter);
+}
+
+function startNarration(){
+  if(!synth){
+    alert('Este navegador não tem suporte a leitura em voz alta.');
+    return;
+  }
+  narrating = true;
+  playBtn.classList.add('playing');
+  playBtn.innerHTML = '&#10073;&#10073;';
+  speakCurrentAndAdvance();
+}
+
+function stopNarration(){
+  if(!narrating && !(synth && synth.speaking)) return;
+  narrating = false;
+  playBtn.classList.remove('playing');
+  playBtn.innerHTML = '&#128266;';
+  narrationNote.classList.remove('show');
+  if(synth){ synth.cancel(); }
+}
+
+playBtn.addEventListener('click', ()=>{
+  if(narrating){ stopNarration(); } else { startNarration(); }
+});
+
+window.addEventListener('beforeunload', ()=>{ if(synth) synth.cancel(); });
+
+// also wire the inline TOC page (rendered within the book itself)
+document.addEventListener('click', (e)=>{
+  const item = e.target.closest('.toc-page .toc-item[data-jump]');
+  if(item){
+    stopNarration();
+    const label = item.getAttribute('data-jump');
+    const idx = PAGES.findIndex(p => p.anchor === label);
+    if(idx >= 0) jumpTo(idx);
+  }
+});
+
+function buildToc(){
+  const tocPage = PAGES.find(p => p.type === 'toc');
+  const anchorIndex = {};
+  PAGES.forEach((p,i)=>{ if(p.anchor) anchorIndex[p.anchor] = i; });
+  const items = tocPage.entries.map(e=>{
+    if(e.heading) return `<div class="toc-item heading">${esc(e.label)}</div>`;
+    return `<div class="toc-item${e.indent?' indent':''}" data-idx="${anchorIndex[e.label] ?? ''}">${esc(e.label)}</div>`;
+  }).join('');
+  tocPanel.innerHTML = `<h2>Sumário</h2><div class="toc-list">${items}</div>`;
+  tocPanel.querySelectorAll('.toc-item[data-idx]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.getAttribute('data-idx'),10);
+      if(!isNaN(idx)) jumpTo(idx);
+    });
+  });
+}
+
+paint();
+</script>
+</body>
+</html>
